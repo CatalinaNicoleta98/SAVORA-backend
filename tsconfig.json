@@ -10,7 +10,7 @@
       "*": ["node_modules/*"]
     },
     "resolveJsonModule": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": false,
