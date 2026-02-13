@@ -26,3 +26,55 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
         await disconnect();
     }
 }
+
+
+//retieves all recipes from the data source
+
+export async function getAllRecipes(req: Request, res: Response) {
+
+    try{
+
+        await connect();
+
+        
+        const result = await recipeModel.find({});
+        
+        res.status(200).send(result);
+
+
+    }catch (error) {
+
+        res.status(500).send("error retrieving recipes. Error: " + error);
+
+    }finally {
+
+        await disconnect();
+    }
+
+} 
+
+//retrieves a recipe entry by id from the data source
+export async function getRecipeById(req: Request, res: Response) {
+
+    try{
+
+        await connect();
+
+        const id = req.params.id;
+
+        
+        const result = await recipeModel.find({_id: id});
+        
+        res.status(200).send(result);
+
+
+    }catch (error) {
+
+        res.status(500).send("error retrieving recipes. Error: " + error);
+
+    }finally {
+
+        await disconnect();
+    }
+
+} 

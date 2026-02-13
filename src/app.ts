@@ -11,6 +11,9 @@ dotenvFlow.config();
 //create express application
 const app: Application = express();
 
+//JSON body parser middlerware
+app.use(express.json());
+
 //bind routes to the app
 app.use('/api', routes);
 
