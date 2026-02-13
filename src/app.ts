@@ -13,7 +13,8 @@ app.use('/api', routes);
 
 export function startServer(){
 
-    app.listen(4000, function(){
-        console.log("Server is up and running on port:" + 4000);
+   const PORT: number = parseInt(process.env.PORT as string) || 4000;
+    app.listen(PORT, function(){
+        console.log("Server is up and running on port:" + PORT);
     });
 }
