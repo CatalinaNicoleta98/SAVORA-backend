@@ -11,10 +11,12 @@ dotenvFlow.config();
 //create express application
 const app: Application = express();
 
+//bind routes to the app
 app.use('/api', routes);
 
 export function startServer(){
 
+    //test db connection
     testConnection();
 
    const PORT: number = parseInt(process.env.PORT as string) || 4000;
