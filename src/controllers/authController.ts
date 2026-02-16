@@ -147,6 +147,31 @@ export async function loginUser(req:Request, res:Response){
     }
 }
 
+//get current logged-in user profile 
+export async function getMe(req: Request, res: Response) {
+    try {
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        await connect();
+
+        const user = await userModel.findById(req.userId).select('-password');
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        res.status(200).json({ error: null, data: user });
+    } catch (error) {
+        res.status(500).send('Error fetching user. Error: ' + error);
+    } finally {
+        await disconnect();
+    }
+}
+
 //middleware to verify the token and protect routes
 export function verifyToken(req: Request, res: Response, next: NextFunction) {
     const token = req.header('auth-token');

@@ -1,11 +1,12 @@
-import {Router, Request, Response} from 'express';
-import {createRecipe,
-    getAllRecipes, 
+import { Router, Request, Response } from 'express';
+import {
+    createRecipe,
+    getAllRecipes,
     getRecipeById,
     deleteRecipeById,
-    updateRecipeById
+    updateRecipeById,
 } from './controllers/recipeController';
-import {registerUser, loginUser, verifyToken} from './controllers/authController';
+import { registerUser, loginUser, verifyToken, getMe } from './controllers/authController';
 
 const router: Router = Router();
 
@@ -21,12 +22,9 @@ const router: Router = Router();
  *   description: This endpoint returns a welcome message to the SAVORA API.
  *   responses:
  *    200:
- *     description: A welcome message to the SAVORA API.  
+ *     description: A welcome message to the SAVORA API.
  */
-
-
 router.get('/', (req: Request, res: Response) => {
-
     res.status(200).send('Welcome to SAVORA');
 });
 
@@ -96,6 +94,28 @@ router.post('/user/register', registerUser);
  */
 router.post('/user/login', loginUser);
 
+/**
+ * @swagger
+ * /user/me:
+ *  get:
+ *   tags:
+ *    - Auth
+ *   summary: Get current logged-in user
+ *   description: Returns the currently logged-in user profile (without password). Requires auth-token header.
+ *   security:
+ *    - ApiKeyAuth: []
+ *   responses:
+ *    200:
+ *     description: Current user profile
+ *    401:
+ *     description: Unauthorized
+ *    404:
+ *     description: User not found
+ *    500:
+ *     description: Server error
+ */
+router.get('/user/me', verifyToken, getMe);
+
 //CRUD routes
 //create
 /**
@@ -107,7 +127,7 @@ router.post('/user/login', loginUser);
  *   summary: Create a recipe
  *   description: Creates a new recipe. Requires a valid JWT token.
  *   security:
- *    - bearerAuth: []
+ *    - ApiKeyAuth: []
  *   requestBody:
  *    required: true
  *    content:
@@ -127,7 +147,6 @@ router.post('/user/login', loginUser);
  *       cookingTime: 20
  *       servings: 2
  *       image: "/uploads/pasta.jpg"
- *       createdBy: "<userId>"
  *   responses:
  *    201:
  *     description: Recipe created successfully
@@ -155,7 +174,7 @@ router.post('/recipes', verifyToken, createRecipe);
  *    500:
  *     description: Server error
  */
-router .get('/recipes', getAllRecipes);
+router.get('/recipes', getAllRecipes);
 
 /**
  * @swagger
@@ -191,7 +210,7 @@ router.get('/recipes/:id', getRecipeById);
  *   summary: Update a recipe by ID
  *   description: Updates an existing recipe by its ID. Requires a valid JWT token.
  *   security:
- *    - bearerAuth: []
+ *    - ApiKeyAuth: []
  *   parameters:
  *    - in: path
  *      name: id
@@ -216,7 +235,7 @@ router.get('/recipes/:id', getRecipeById);
  *    500:
  *     description: Server error
  */
-router.put('/recipes/:id',verifyToken, updateRecipeById);
+router.put('/recipes/:id', verifyToken, updateRecipeById);
 
 //delete
 /**
@@ -228,7 +247,7 @@ router.put('/recipes/:id',verifyToken, updateRecipeById);
  *   summary: Delete a recipe by ID
  *   description: Deletes an existing recipe by its ID. Requires a valid JWT token.
  *   security:
- *    - bearerAuth: []
+ *    - ApiKeyAuth: []
  *   parameters:
  *    - in: path
  *      name: id
@@ -245,6 +264,6 @@ router.put('/recipes/:id',verifyToken, updateRecipeById);
  *    500:
  *     description: Server error
  */
-router.delete('/recipes/:id',verifyToken, deleteRecipeById);
+router.delete('/recipes/:id', verifyToken, deleteRecipeById);
 
 export default router;
