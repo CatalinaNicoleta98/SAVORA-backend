@@ -45,13 +45,20 @@ export async function registerUser(req:Request, res:Response){
 
             //create a user object and save in the db
             const userObject = new userModel({
-                name: req.body.name,
+                username: req.body.username,
                 email: req.body.email,
-                password: passwordHashed
+                password: passwordHashed,
             });
 
             const savedUser = await userObject.save();
-            res.status(200).json({error: null, data: savedUser._id});
+            res.status(201).json({error: null, data: {
+                _id: savedUser._id,
+                username: savedUser.username,
+                email: savedUser.email,
+                passwordHashed: savedUser.password,
+                createdAt: savedUser.createdAt,
+                updatedAt: savedUser.updatedAt
+            }});
 
         
 
@@ -61,7 +68,7 @@ export async function registerUser(req:Request, res:Response){
 
 
     } finally{
-        
+        disconnect();
     }
 };
 
@@ -73,7 +80,7 @@ export async function registerUser(req:Request, res:Response){
 export function validateUserRegistration(data: User): ValidationResult {
 
     const schema = Joi.object({
-        name: Joi.string().min(6).max(255).required(),
+        username: Joi.string().min(6).max(255).required(),
         email: Joi.string().email().min(6).max(255).required(),
         password: Joi.string().min(6).max(20).required()
     });
@@ -87,6 +94,7 @@ export function validateUserRegistration(data: User): ValidationResult {
 export function validateUserLogin(data: User): ValidationResult {
 
     const schema = Joi.object({
+        username: Joi.string().min(6).max(255).required(),
         email: Joi.string().email().min(6).max(255).required(),
         password: Joi.string().min(6).max(20).required()
     });
