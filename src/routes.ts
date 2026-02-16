@@ -11,6 +11,19 @@ const router: Router = Router();
 
 //get, post, put, delete (CRUD)
 
+/**
+ * @swagger
+ * /:
+ *  get:
+ *   tags:
+ *   - App Routes
+ *   summary: Welcome to SAVORA
+ *   description: This endpoint returns a welcome message to the SAVORA API.
+ *   responses:
+ *    200:
+ *     description: A welcome message to the SAVORA API.  
+ */
+
 
 router.get('/', (req: Request, res: Response) => {
 
