@@ -5,7 +5,7 @@ import {createRecipe,
     deleteRecipeById,
     updateRecipeById
 } from './controllers/recipeController';
-import {registerUser} from './controllers/authController';
+import {registerUser, loginUser, verifyToken} from './controllers/authController';
 
 const router: Router = Router();
 
@@ -19,16 +19,16 @@ router.get('/', (req: Request, res: Response) => {
 
 //auth routes
 router.post('/user/register', registerUser);
-
+router.post('/user/login', loginUser);
 //CRUD routes
 //create
-router.post('/recipes', createRecipe);
+router.post('/recipes', verifyToken, createRecipe);
 //read
 router .get('/recipes', getAllRecipes);
 router.get('/recipes/:id', getRecipeById);
 //update
-router.put('/recipes/:id', updateRecipeById);
+router.put('/recipes/:id',verifyToken, updateRecipeById);
 //delete
-router.delete('/recipes/:id', deleteRecipeById);
+router.delete('/recipes/:id',verifyToken, deleteRecipeById);
 
 export default router;

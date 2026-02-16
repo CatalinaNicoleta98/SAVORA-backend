@@ -74,6 +74,90 @@ export async function registerUser(req:Request, res:Response){
 
 //login
 
+export async function loginUser(req:Request, res:Response){
+    try{
+
+        //validate user login info
+
+        const {error} = validateUserLogin(req.body);
+        if (error){
+            res.status(400).json({error: error.details[0].message});
+            return;
+        }
+
+
+        //find the user in the repository
+        await connect();
+
+        const user: User | null = await userModel.findOne({ username: req.body.username });
+
+        if(!user){
+            res.status(400).json({error: "Username or password is wrong"});
+            return;
+        }else{
+                    //create auth token and send it back
+            const validPassword: boolean = await bcrypt.compare(req.body.password, user.password);
+            if (!validPassword){
+                res.status(400).json({error: "Username or password is wrong"});
+                return;
+            }
+
+            const userId: string = user._id;
+            const token: string = jwt.sign(
+                {
+                    //payload
+                    username: user.username,
+                    email: user.email,
+                    id: userId
+                },
+                process.env.TOKEN_SECRET as string, 
+                {expiresIn: '2h'}
+               
+
+            ); 
+
+            //attach the token and send it back to the client
+
+            res.status(200).header("auth-token", token).json({error:null, data:{userId, token}});
+
+
+
+        }
+
+
+    } catch(error){
+
+        res.status(500).send("Error logging in user. Error: " + error);
+
+    }finally{
+
+        await disconnect();
+
+    }
+}
+
+//middleware to verify the token and protect routes
+export function verifyToken(req:Request, res:Response, next:NextFunction){
+    const token = req.header("auth-token");
+
+    if(!token){
+        res.status(400).json({error: "Access denied"});
+        return;
+    }
+
+    try{
+        if(token)
+            jwt.verify(token, process.env.TOKEN_SECRET as string);
+
+        next();
+
+    }catch{
+        res.status(401).send("Invalid token");
+    }
+
+}
+
+
 
 
 //validate user registration data(name, email and password)
@@ -95,7 +179,6 @@ export function validateUserLogin(data: User): ValidationResult {
 
     const schema = Joi.object({
         username: Joi.string().min(6).max(255).required(),
-        email: Joi.string().email().min(6).max(255).required(),
         password: Joi.string().min(6).max(20).required()
     });
 
