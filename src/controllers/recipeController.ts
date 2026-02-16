@@ -78,3 +78,63 @@ export async function getRecipeById(req: Request, res: Response) {
     }
 
 } 
+
+//updates a recipe entry by id in the data source based on the request body
+export async function updateRecipeById(req: Request, res: Response) {
+
+    const id = req.params.id;
+
+    try{
+
+        await connect();
+
+    
+        const result = await recipeModel.findByIdAndUpdate(id, req.body);
+
+        if(!result){
+            res.status(404).send('Cannot update recipe entry with id= ' + id );
+        }else{
+            res.status(200).send('Recipe entry was updated successfully.');
+        }
+        
+
+    
+    }catch (error) {
+
+        res.status(500).send("Error updating recipe entry by id. Error: " + error);
+
+    }finally {
+
+        await disconnect();
+    }
+}
+
+//deletes a recipe entry by id from the data source
+export async function deleteRecipeById(req: Request, res: Response) {
+
+    const id = req.params.id;
+
+    try{
+
+        await connect();
+
+        const result = await recipeModel.findByIdAndDelete(id);
+
+        if(!result){
+            res.status(404).send('Cannot delete recipe entry with id= ' + id );
+        }else{
+            res.status(200).send('Recipe entry was deleted successfully.');
+        }
+        
+
+    
+    }catch (error) {
+
+        res.status(500).send("Error deleting recipe entry by id. Error: " + error);
+
+    }finally {
+
+        await disconnect();
+    }
+
+} 
