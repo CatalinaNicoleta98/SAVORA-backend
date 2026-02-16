@@ -3,7 +3,18 @@ import {
     type Response,
     type NextFunction,
 } from 'express';
+
 import jwt from 'jsonwebtoken';
+
+declare global {
+    namespace Express {
+        interface Request {
+            userId?: string;
+            userEmail?: string;
+            userUsername?: string;
+        }
+    }
+}
 
 import bcrypt from 'bcrypt';
 import Joi, {ValidationResult} from 'joi';
@@ -137,24 +148,31 @@ export async function loginUser(req:Request, res:Response){
 }
 
 //middleware to verify the token and protect routes
-export function verifyToken(req:Request, res:Response, next:NextFunction){
-    const token = req.header("auth-token");
+export function verifyToken(req: Request, res: Response, next: NextFunction) {
+    const token = req.header('auth-token');
 
-    if(!token){
-        res.status(400).json({error: "Access denied"});
+    if (!token) {
+        res.status(401).json({ error: 'Access denied, no token provided' });
         return;
     }
 
-    try{
-        if(token)
-            jwt.verify(token, process.env.TOKEN_SECRET as string);
+    try {
+        const decoded = jwt.verify(token, process.env.TOKEN_SECRET as string) as {
+            id: string;
+            email?: string;
+            username?: string;
+            iat?: number;
+            exp?: number;
+        };
+
+        req.userId = decoded.id;
+        req.userEmail = decoded.email;
+        req.userUsername = decoded.username;
 
         next();
-
-    }catch{
-        res.status(401).send("Invalid token");
+    } catch (error) {
+        res.status(401).json({ error: 'Invalid token' });
     }
-
 }
 
 
