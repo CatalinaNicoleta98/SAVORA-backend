@@ -66,7 +66,6 @@ export async function registerUser(req:Request, res:Response){
                 _id: savedUser._id,
                 username: savedUser.username,
                 email: savedUser.email,
-                passwordHashed: savedUser.password,
                 createdAt: savedUser.createdAt,
                 updatedAt: savedUser.updatedAt
             }});
