@@ -5,24 +5,24 @@ import {connect, disconnect} from '../repository/db';
 //CRUD - Create, Read/get, Update, Delete
 //creates new entry book in the data source based on the request body
 export async function createRecipe(req: Request, res: Response): Promise<void> {
-    const data = req.body;
-
-    try{
-
+    try {
         await connect();
+
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        // Never trust the client to set ownership
+        const data = { ...req.body, createdBy: req.userId };
 
         const recipe = new recipeModel(data);
         const result = await recipe.save();
-        
+
         res.status(201).send(result);
-
-
-    }catch(error){
-
-        res.status(500).send("Error creating recipe entry");
-
-    }finally {
-
+    } catch (error) {
+        res.status(500).send('Error creating recipe entry. Error: ' + error);
+    } finally {
         await disconnect();
     }
 }
@@ -31,110 +31,175 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
 //retieves all recipes from the data source
 
 export async function getAllRecipes(req: Request, res: Response) {
-
-    try{
-
+    try {
         await connect();
 
-        
-        const result = await recipeModel.find({});
-        
-        res.status(200).send(result);
+        // Query params supported:
+        // q, tags, diet, allergens, createdBy, page, limit, sort (newest|oldest)
+        const {
+            q,
+            tags,
+            diet,
+            allergens,
+            createdBy,
+            page = '1',
+            limit = '20',
+            sort = 'newest',
+        } = req.query as Record<string, string>;
 
+        const filter: Record<string, any> = {};
 
-    }catch (error) {
+        if (createdBy) {
+            filter.createdBy = createdBy;
+        }
 
-        res.status(500).send("error retrieving recipes. Error: " + error);
+        const parseCsv = (value?: string) =>
+            (value || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
 
-    }finally {
+        const tagsArr = parseCsv(tags);
+        if (tagsArr.length) {
+            filter.tags = { $in: tagsArr };
+        }
 
+        const dietArr = parseCsv(diet);
+        if (dietArr.length) {
+            filter.diet = { $in: dietArr };
+        }
+
+        const allergensArr = parseCsv(allergens);
+        if (allergensArr.length) {
+            filter.allergens = { $in: allergensArr };
+        }
+
+        // Basic text search (regex). Works without needing DB indexes.
+        if (q && q.trim().length) {
+            const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(safe, 'i');
+            filter.$or = [
+                { title: regex },
+                { fullRecipe: regex },
+                { ingredients: regex },
+                { tags: regex },
+            ];
+        }
+
+        const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+        const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+        const skip = (pageNum - 1) * limitNum;
+
+        const sortObj: any = sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 };
+
+        const [items, total] = await Promise.all([
+            recipeModel.find(filter).sort(sortObj).skip(skip).limit(limitNum),
+            recipeModel.countDocuments(filter),
+        ]);
+
+        res.status(200).json({
+            error: null,
+            data: items,
+            meta: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum),
+            },
+        });
+    } catch (error) {
+        res.status(500).send('error retrieving recipes. Error: ' + error);
+    } finally {
         await disconnect();
     }
-
 } 
 
 //retrieves a recipe entry by id from the data source
 export async function getRecipeById(req: Request, res: Response) {
-
-    try{
-
+    try {
         await connect();
 
         const id = req.params.id;
+        const result = await recipeModel.findById(id);
 
-        
-        const result = await recipeModel.find({_id: id});
-        
+        if (!result) {
+            res.status(404).json({ error: 'Recipe not found' });
+            return;
+        }
+
         res.status(200).send(result);
-
-
-    }catch (error) {
-
-        res.status(500).send("error retrieving recipes. Error: " + error);
-
-    }finally {
-
+    } catch (error) {
+        res.status(500).send('error retrieving recipes. Error: ' + error);
+    } finally {
         await disconnect();
     }
-
 } 
 
 //updates a recipe entry by id in the data source based on the request body
 export async function updateRecipeById(req: Request, res: Response) {
-
     const id = req.params.id;
 
-    try{
-
+    try {
         await connect();
 
-    
-        const result = await recipeModel.findByIdAndUpdate(id, req.body);
-
-        if(!result){
-            res.status(404).send('Cannot update recipe entry with id= ' + id );
-        }else{
-            res.status(200).send('Recipe entry was updated successfully.');
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
         }
-        
 
-    
-    }catch (error) {
+        const existing = await recipeModel.findById(id);
+        if (!existing) {
+            res.status(404).json({ error: 'Recipe not found' });
+            return;
+        }
 
-        res.status(500).send("Error updating recipe entry by id. Error: " + error);
+        if (String(existing.createdBy) !== String(req.userId)) {
+            res.status(403).json({ error: 'Forbidden, you can only update your own recipes' });
+            return;
+        }
 
-    }finally {
+        // Never allow changing ownership via update
+        const { createdBy, ...safeBody } = req.body;
 
+        const updated = await recipeModel.findByIdAndUpdate(id, safeBody, { new: true });
+
+        res.status(200).json({ error: null, data: updated });
+    } catch (error) {
+        res.status(500).send('Error updating recipe entry by id. Error: ' + error);
+    } finally {
         await disconnect();
     }
 }
 
 //deletes a recipe entry by id from the data source
 export async function deleteRecipeById(req: Request, res: Response) {
-
     const id = req.params.id;
 
-    try{
-
+    try {
         await connect();
 
-        const result = await recipeModel.findByIdAndDelete(id);
-
-        if(!result){
-            res.status(404).send('Cannot delete recipe entry with id= ' + id );
-        }else{
-            res.status(200).send('Recipe entry was deleted successfully.');
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
         }
-        
 
-    
-    }catch (error) {
+        const existing = await recipeModel.findById(id);
+        if (!existing) {
+            res.status(404).json({ error: 'Recipe not found' });
+            return;
+        }
 
-        res.status(500).send("Error deleting recipe entry by id. Error: " + error);
+        if (String(existing.createdBy) !== String(req.userId)) {
+            res.status(403).json({ error: 'Forbidden, you can only delete your own recipes' });
+            return;
+        }
 
-    }finally {
+        await recipeModel.findByIdAndDelete(id);
 
+        res.status(200).json({ error: null, data: 'Recipe entry was deleted successfully.' });
+    } catch (error) {
+        res.status(500).send('Error deleting recipe entry by id. Error: ' + error);
+    } finally {
         await disconnect();
     }
-
 } 
