@@ -34,6 +34,12 @@ const recipeSchema = new Schema<Recipe>(
       type: [String],
     },
 
+    difficulty: { 
+      type: String, 
+      enum: ["easy", "medium", "hard"], 
+      default: "easy" 
+    },
+
     cookingTime: {
       type: Number,
     },

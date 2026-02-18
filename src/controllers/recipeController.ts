@@ -1,6 +1,15 @@
 import {Request, Response} from 'express';
 import {recipeModel} from '../models/recipeModel';
+
 import {connect, disconnect} from '../repository/db';
+
+const ALLOWED_DIFFICULTIES = ["easy", "medium", "hard"] as const;
+
+type AllowedDifficulty = (typeof ALLOWED_DIFFICULTIES)[number];
+
+function isAllowedDifficulty(value: unknown): value is AllowedDifficulty {
+    return typeof value === "string" && (ALLOWED_DIFFICULTIES as readonly string[]).includes(value);
+}
 
 //CRUD - Create, Read/get, Update, Delete
 //creates new entry book in the data source based on the request body
@@ -10,6 +19,13 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
 
         if (!req.userId) {
             res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        // Validate difficulty if provided
+        const { difficulty } = req.body as { difficulty?: unknown };
+        if (difficulty !== undefined && !isAllowedDifficulty(difficulty)) {
+            res.status(400).json({ error: 'Invalid difficulty. Use easy, medium, or hard.' });
             return;
         }
 
@@ -41,6 +57,7 @@ export async function getAllRecipes(req: Request, res: Response) {
             tags,
             diet,
             allergens,
+            difficulty,
             createdBy,
             page = '1',
             limit = '20',
@@ -72,6 +89,14 @@ export async function getAllRecipes(req: Request, res: Response) {
         const allergensArr = parseCsv(allergens);
         if (allergensArr.length) {
             filter.allergens = { $in: allergensArr };
+        }
+
+        if (difficulty && difficulty !== 'all') {
+            if (!isAllowedDifficulty(difficulty)) {
+                res.status(400).json({ error: 'Invalid difficulty. Use easy, medium, or hard.' });
+                return;
+            }
+            filter.difficulty = difficulty;
         }
 
         // Basic text search (regex). Works without needing DB indexes.
@@ -159,6 +184,13 @@ export async function updateRecipeById(req: Request, res: Response) {
         }
 
         // Never allow changing ownership via update
+        // Validate difficulty if provided
+        const { difficulty } = req.body as { difficulty?: unknown };
+        if (difficulty !== undefined && !isAllowedDifficulty(difficulty)) {
+            res.status(400).json({ error: 'Invalid difficulty. Use easy, medium, or hard.' });
+            return;
+        }
+
         const { createdBy, ...safeBody } = req.body;
 
         const updated = await recipeModel.findByIdAndUpdate(id, safeBody, { new: true });

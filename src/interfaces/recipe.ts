@@ -12,7 +12,7 @@ export interface Recipe extends Document {
   tags?: string[];        // ["italian", "quick", "spicy"]
   diet?: string[];        // ["vegetarian", "vegan"]
   allergens?: string[];   // ["nuts", "dairy"]
-
+  difficulty?: "easy" | "medium" | "hard";    // literal union type, it can only be exactly one of these three values
   cookingTime?: number;   // minutes
   servings?: number;
 
