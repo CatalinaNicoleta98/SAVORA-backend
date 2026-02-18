@@ -16,20 +16,26 @@ const app: Application = express();
 
 function setupCors(){
     app.use(cors({
-        //Allow request from any origin
-        origin: "*",
+        // Allow requests from frontend dev servers
+        origin: [
+            "http://localhost:5173",
+            "http://localhost:5174"
+        ],
 
-        //allow methods
-        methods: 'GET, POST, PUT, DELETE',
+        // allow methods
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
 
-        //allow headers
-        allowedHeaders: ['auth-token', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept' ],
+        // allow headers
+        allowedHeaders: ['auth-token', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
 
-        //allow credentials
+        // allow credentials
         credentials: true
     }));
 }
 
+
+//setup cors
+setupCors();
 
 //JSON body parser middlerware
 app.use(express.json());
@@ -41,9 +47,6 @@ app.use('/api', routes);
 setupDocs(app);
 
 export function startServer(){
-
-    //setup cors
-    setupCors();
 
     //test db connection
     testConnection();
