@@ -1,8 +1,6 @@
 import {Request, Response} from 'express';
 import {recipeModel} from '../models/recipeModel';
 
-import {connect, disconnect} from '../repository/db';
-
 const ALLOWED_DIFFICULTIES = ["easy", "medium", "hard"] as const;
 
 type AllowedDifficulty = (typeof ALLOWED_DIFFICULTIES)[number];
@@ -15,7 +13,6 @@ function isAllowedDifficulty(value: unknown): value is AllowedDifficulty {
 //creates new entry book in the data source based on the request body
 export async function createRecipe(req: Request, res: Response): Promise<void> {
     try {
-        await connect();
 
         if (!req.userId) {
             res.status(401).json({ error: 'Unauthorized' });
@@ -38,8 +35,6 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
         res.status(201).send(result);
     } catch (error) {
         res.status(500).send('Error creating recipe entry. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 }
 
@@ -48,7 +43,6 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
 
 export async function getAllRecipes(req: Request, res: Response) {
     try {
-        await connect();
 
         // Query params supported:
         // q, tags, diet, allergens, createdBy, page, limit, sort (newest|oldest)
@@ -134,15 +128,12 @@ export async function getAllRecipes(req: Request, res: Response) {
         });
     } catch (error) {
         res.status(500).send('error retrieving recipes. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 } 
 
 //retrieves a recipe entry by id from the data source
 export async function getRecipeById(req: Request, res: Response) {
     try {
-        await connect();
 
         const id = req.params.id;
         const result = await recipeModel.findById(id);
@@ -155,8 +146,6 @@ export async function getRecipeById(req: Request, res: Response) {
         res.status(200).send(result);
     } catch (error) {
         res.status(500).send('error retrieving recipes. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 } 
 
@@ -165,7 +154,6 @@ export async function updateRecipeById(req: Request, res: Response) {
     const id = req.params.id;
 
     try {
-        await connect();
 
         if (!req.userId) {
             res.status(401).json({ error: 'Unauthorized' });
@@ -198,8 +186,6 @@ export async function updateRecipeById(req: Request, res: Response) {
         res.status(200).json({ error: null, data: updated });
     } catch (error) {
         res.status(500).send('Error updating recipe entry by id. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 }
 
@@ -208,7 +194,6 @@ export async function deleteRecipeById(req: Request, res: Response) {
     const id = req.params.id;
 
     try {
-        await connect();
 
         if (!req.userId) {
             res.status(401).json({ error: 'Unauthorized' });
@@ -231,7 +216,5 @@ export async function deleteRecipeById(req: Request, res: Response) {
         res.status(200).json({ error: null, data: 'Recipe entry was deleted successfully.' });
     } catch (error) {
         res.status(500).send('Error deleting recipe entry by id. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 } 

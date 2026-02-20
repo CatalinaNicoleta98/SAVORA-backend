@@ -22,7 +22,6 @@ import Joi, {ValidationResult} from 'joi';
 //project imports
 import { userModel} from "../models/userModel";
 import {User} from "../interfaces/user";
-import {connect, disconnect} from '../repository/db';
 
 //Register a new user
 
@@ -40,7 +39,6 @@ export async function registerUser(req:Request, res:Response){
 
             //check if the email is already registered
 
-            await connect();
 
             const emailExist = await userModel.findOne({ email: req.body.email });
 
@@ -77,8 +75,6 @@ export async function registerUser(req:Request, res:Response){
         res.status(500).send("Error registering user. Error: " + error);
 
 
-    } finally{
-        disconnect();
     }
 };
 
@@ -97,7 +93,6 @@ export async function loginUser(req:Request, res:Response){
 
 
         //find the user in the repository
-        await connect();
 
         const user: User | null = await userModel.findOne({ username: req.body.username });
 
@@ -139,10 +134,6 @@ export async function loginUser(req:Request, res:Response){
 
         res.status(500).send("Error logging in user. Error: " + error);
 
-    }finally{
-
-        await disconnect();
-
     }
 }
 
@@ -154,7 +145,6 @@ export async function getMe(req: Request, res: Response) {
             return;
         }
 
-        await connect();
 
         const user = await userModel.findById(req.userId).select('-password');
 
@@ -166,8 +156,6 @@ export async function getMe(req: Request, res: Response) {
         res.status(200).json({ error: null, data: user });
     } catch (error) {
         res.status(500).send('Error fetching user. Error: ' + error);
-    } finally {
-        await disconnect();
     }
 }
 

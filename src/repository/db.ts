@@ -14,6 +14,11 @@ export async function testConnection(){
 
 export async function connect(){
 
+    // If already connected, do nothing
+    if (mongoose.connection.readyState === 1) {
+        return;
+    }
+
     try {
         if(!process.env.DBHOST){
             throw new Error("DBHOST is not defined in environment variables");
@@ -29,16 +34,22 @@ export async function connect(){
 
     }catch (error){
         console.log("Error connecting to the database:" + error);
+        throw error;
     }
 };
 
 
 export async function disconnect(){
     try {
+        // If not connected, nothing to do
+        if (mongoose.connection.readyState !== 1) {
+            return;
+        }
         await mongoose.disconnect();
         console.log("Disconnected successfully from the database");
 
     }catch (error){
         console.log("Error disconnecting from the database:" + error);
+        throw error;
     }
 }

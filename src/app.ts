@@ -1,7 +1,7 @@
 import express, {Application, Request, Response} from 'express';
 import dotenvFlow from 'dotenv-flow';
 import routes from './routes';
-import {testConnection} from './repository/db';
+import {connect} from './repository/db';
 import {setupDocs} from './util/documentation';
 import cors from 'cors';
 
@@ -26,7 +26,7 @@ function setupCors(){
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
 
         // allow headers
-        allowedHeaders: ['auth-token', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
+        allowedHeaders: ['auth-token', 'Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
 
         // allow credentials
         credentials: true
@@ -46,12 +46,12 @@ app.use('/api', routes);
 //setup swagger documentation
 setupDocs(app);
 
-export function startServer(){
+export async function startServer(){
 
-    //test db connection
-    testConnection();
+    // connect to DB once at startup, keep it open
+    await connect();
 
-   const PORT: number = parseInt(process.env.PORT as string) || 4000;
+    const PORT: number = parseInt(process.env.PORT as string) || 4000;
     app.listen(PORT, function(){
         console.log("Server is up and running on port:" + PORT);
     });
