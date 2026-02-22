@@ -9,6 +9,61 @@ function isAllowedDifficulty(value: unknown): value is AllowedDifficulty {
     return typeof value === "string" && (ALLOWED_DIFFICULTIES as readonly string[]).includes(value);
 }
 
+function parseStringArray(value: unknown): string[] | undefined {
+    if (value === undefined || value === null) return undefined;
+
+    if (Array.isArray(value)) {
+        return value
+            .filter((x) => typeof x === "string")
+            .map((s) => s.trim())
+            .filter(Boolean);
+    }
+
+    if (typeof value !== "string") return undefined;
+
+    const raw = value.trim();
+    if (!raw) return [];
+
+    // JSON array string support: '["a","b"]'
+    if (raw.startsWith("[") && raw.endsWith("]")) {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .filter((x) => typeof x === "string")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+            }
+        } catch {
+            // fall through to CSV parsing
+        }
+    }
+
+    // CSV support: 'a, b, c'
+    return raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+function normalizeRecipeBody(body: any) {
+    const normalized: any = { ...body };
+
+    const ingredients = parseStringArray(body?.ingredients);
+    if (ingredients !== undefined) normalized.ingredients = ingredients;
+
+    const tags = parseStringArray(body?.tags);
+    if (tags !== undefined) normalized.tags = tags;
+
+    const diet = parseStringArray(body?.diet);
+    if (diet !== undefined) normalized.diet = diet;
+
+    const allergens = parseStringArray(body?.allergens);
+    if (allergens !== undefined) normalized.allergens = allergens;
+
+    return normalized;
+}
+
 //CRUD - Create, Read/get, Update, Delete
 //creates new entry book in the data source based on the request body
 export async function createRecipe(req: Request, res: Response): Promise<void> {
@@ -26,8 +81,16 @@ export async function createRecipe(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        const normalizedBody = normalizeRecipeBody(req.body);
+
+        // If multer is used on the route, an uploaded file will be available here.
+        const file = (req as any).file as { filename?: string } | undefined;
+        if (file?.filename) {
+            normalizedBody.image = `/uploads/${file.filename}`;
+        }
+
         // Never trust the client to set ownership
-        const data = { ...req.body, createdBy: req.userId };
+        const data = { ...normalizedBody, createdBy: req.userId };
 
         const recipe = new recipeModel(data);
         const result = await recipe.save();
@@ -179,7 +242,14 @@ export async function updateRecipeById(req: Request, res: Response) {
             return;
         }
 
-        const { createdBy, ...safeBody } = req.body;
+        const normalizedBody = normalizeRecipeBody(req.body);
+
+        const file = (req as any).file as { filename?: string } | undefined;
+        if (file?.filename) {
+            normalizedBody.image = `/uploads/${file.filename}`;
+        }
+
+        const { createdBy, ...safeBody } = normalizedBody;
 
         const updated = await recipeModel.findByIdAndUpdate(id, safeBody, { new: true });
 

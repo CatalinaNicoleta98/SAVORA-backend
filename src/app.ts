@@ -1,4 +1,5 @@
 import express, {Application, Request, Response} from 'express';
+import path from 'path';
 import dotenvFlow from 'dotenv-flow';
 import routes from './routes';
 import {connect} from './repository/db';
@@ -39,6 +40,9 @@ setupCors();
 
 //JSON body parser middlerware
 app.use(express.json());
+
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 //bind routes to the app
 app.use('/api', routes);

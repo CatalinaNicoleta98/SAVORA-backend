@@ -1,4 +1,7 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import {
     createRecipe,
     getAllRecipes,
@@ -9,6 +12,35 @@ import {
 import { registerUser, loginUser, verifyToken, getMe } from './controllers/authController';
 
 const router: Router = Router();
+
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (
+        _req: Request,
+        _file: Express.Multer.File,
+        cb: (error: Error | null, destination: string) => void
+    ) => {
+        cb(null, uploadsDir);
+    },
+    filename: (
+        _req: Request,
+        file: Express.Multer.File,
+        cb: (error: Error | null, filename: string) => void
+    ) => {
+        const safeOriginal = file.originalname.replace(/\s+/g, '-');
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${unique}-${safeOriginal}`);
+    },
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 //get, post, put, delete (CRUD)
 
@@ -157,7 +189,7 @@ router.get('/user/me', verifyToken, getMe);
  *    500:
  *     description: Server error
  */
-router.post('/recipes', verifyToken, createRecipe);
+router.post('/recipes', verifyToken, upload.single('image'), createRecipe);
 
 //read
 /**
@@ -235,7 +267,7 @@ router.get('/recipes/:id', getRecipeById);
  *    500:
  *     description: Server error
  */
-router.put('/recipes/:id', verifyToken, updateRecipeById);
+router.put('/recipes/:id', verifyToken, upload.single('image'), updateRecipeById);
 
 //delete
 /**
