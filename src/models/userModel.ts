@@ -27,6 +27,19 @@ const userSchema = new Schema<User>(
       minlength: 6,
       maxlength: 255,
     },
+
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 1000,
+      trim: true,
+    },
+
+    profileImage: {
+      type: String,
+      default: "", // stored as /uploads/<filename>
+      trim: true,
+    },
   },
   {
     timestamps: true, // adds createdAt and updatedAt automatically

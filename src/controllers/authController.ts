@@ -5,6 +5,7 @@ import {
 } from 'express';
 
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 declare global {
     namespace Express {
@@ -12,6 +13,7 @@ declare global {
             userId?: string;
             userEmail?: string;
             userUsername?: string;
+            file?: Express.Multer.File;
         }
     }
 }
@@ -156,6 +158,100 @@ export async function getMe(req: Request, res: Response) {
         res.status(200).json({ error: null, data: user });
     } catch (error) {
         res.status(500).send('Error fetching user. Error: ' + error);
+    }
+}
+
+//update current logged-in user profile (bio + optional profile image)
+export async function updateMe(req: Request, res: Response) {
+    try {
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        const updates: Record<string, any> = {};
+
+        const bioRaw = (req.body?.bio ?? '').toString();
+        if (bioRaw.trim().length) {
+            updates.bio = bioRaw.trim();
+        }
+
+        // multer provides file metadata on req.file
+        const file = (req as any).file as { filename?: string; path?: string } | undefined;
+        if (file) {
+            // Prefer storing a public path like /uploads/<filename>
+            if (file.filename) {
+                updates.profileImage = `/uploads/${file.filename}`;
+            } else if (file.path) {
+                const normalized = file.path.replace(/\\/g, '/');
+                const idx = normalized.lastIndexOf('/uploads/');
+                updates.profileImage = idx >= 0 ? normalized.substring(idx) : (normalized.startsWith('/') ? normalized : `/${normalized}`);
+            }
+        }
+
+        const user = await userModel.findByIdAndUpdate(
+            req.userId,
+            { $set: updates },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        res.status(200).json({ error: null, data: user });
+    } catch (error) {
+        res.status(500).send('Error updating user. Error: ' + error);
+    }
+}
+
+//delete current logged-in user account (and delete all their recipes)
+export async function deleteMe(req: Request, res: Response) {
+    try {
+        if (!req.userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        const userId = req.userId;
+
+        // Try to delete recipes created by this user. This is resilient to different model export names.
+        let deletedRecipes = 0;
+        try {
+            const mod: any = await import('../models/recipeModel');
+            const recipeModelCandidate = mod.recipeModel ?? mod.RecipeModel ?? mod.default;
+            if (recipeModelCandidate?.deleteMany) {
+                const delRes = await recipeModelCandidate.deleteMany({
+                    $or: [{ createdBy: userId }, { _createdBy: userId }],
+                });
+                deletedRecipes = (delRes?.deletedCount ?? 0) as number;
+            }
+        } catch {
+            // Fallback: if the model is registered in mongoose under a common name
+            const candidates = ['Recipe', 'recipe', 'recipes'];
+            for (const name of candidates) {
+                const m: any = (mongoose.models as any)[name];
+                if (m?.deleteMany) {
+                    const delRes = await m.deleteMany({
+                        $or: [{ createdBy: userId }, { _createdBy: userId }],
+                    });
+                    deletedRecipes = (delRes?.deletedCount ?? 0) as number;
+                    break;
+                }
+            }
+        }
+
+        const deletedUser = await userModel.findByIdAndDelete(userId);
+
+        if (!deletedUser) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        res.status(200).json({ error: null, data: { deletedUserId: userId, deletedRecipes } });
+    } catch (error) {
+        res.status(500).send('Error deleting user. Error: ' + error);
     }
 }
 

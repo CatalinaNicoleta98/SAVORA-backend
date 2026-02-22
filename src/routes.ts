@@ -9,7 +9,7 @@ import {
     deleteRecipeById,
     updateRecipeById,
 } from './controllers/recipeController';
-import { registerUser, loginUser, verifyToken, getMe } from './controllers/authController';
+import { registerUser, loginUser, verifyToken, getMe, updateMe, deleteMe } from './controllers/authController';
 
 const router: Router = Router();
 
@@ -147,6 +147,63 @@ router.post('/user/login', loginUser);
  *     description: Server error
  */
 router.get('/user/me', verifyToken, getMe);
+
+/**
+ * @swagger
+ * /user/me:
+ *  patch:
+ *   tags:
+ *    - Auth
+ *   summary: Update current logged-in user
+ *   description: Updates the currently logged-in user profile. Supports optional profile image upload. Requires auth-token header.
+ *   security:
+ *    - ApiKeyAuth: []
+ *   requestBody:
+ *    required: false
+ *    content:
+ *     multipart/form-data:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        bio:
+ *         type: string
+ *         example: "Romantasy reader, kitchen experimenter, and recipe hoarder."
+ *        profileImage:
+ *         type: string
+ *         format: binary
+ *   responses:
+ *    200:
+ *     description: User updated successfully
+ *    401:
+ *     description: Unauthorized
+ *    404:
+ *     description: User not found
+ *    500:
+ *     description: Server error
+ */
+router.patch('/user/me', verifyToken, upload.single('profileImage'), updateMe);
+
+/**
+ * @swagger
+ * /user/me:
+ *  delete:
+ *   tags:
+ *    - Auth
+ *   summary: Delete current logged-in user
+ *   description: Deletes the current user account and also deletes all recipes created by this user. Requires auth-token header.
+ *   security:
+ *    - ApiKeyAuth: []
+ *   responses:
+ *    200:
+ *     description: Account deleted successfully
+ *    401:
+ *     description: Unauthorized
+ *    404:
+ *     description: User not found
+ *    500:
+ *     description: Server error
+ */
+router.delete('/user/me', verifyToken, deleteMe);
 
 //CRUD routes
 //create
