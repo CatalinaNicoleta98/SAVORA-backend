@@ -24,14 +24,15 @@ function setupCors(){
         ],
 
         // allow methods
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
         // allow headers
-        allowedHeaders: ['auth-token', 'Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
+        allowedHeaders: ['x-auth-token', 'x-access-token', 'auth-token', 'Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
 
         // allow credentials
         credentials: true
     }));
+    app.options(/.*/, cors());
 }
 
 
