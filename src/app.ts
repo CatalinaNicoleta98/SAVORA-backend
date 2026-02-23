@@ -1,43 +1,20 @@
-import express, {Application, Request, Response} from 'express';
+import express, {Application} from 'express';
 import path from 'path';
 import dotenvFlow from 'dotenv-flow';
 import routes from './routes';
 import {connect} from './repository/db';
 import {setupDocs} from './util/documentation';
-import cors from 'cors';
+import { setupCors } from './util/cors';
 
 
 dotenvFlow.config();
-//dotenvFlow.config();
 
 //create express application
 const app: Application = express();
 
-//cors handling
-
-function setupCors(){
-    app.use(cors({
-        // Allow requests from frontend dev servers
-        origin: [
-            "http://localhost:5173",
-            "http://localhost:5174"
-        ],
-
-        // allow methods
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-
-        // allow headers
-        allowedHeaders: ['x-auth-token', 'x-access-token', 'auth-token', 'Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
-
-        // allow credentials
-        credentials: true
-    }));
-    app.options(/.*/, cors());
-}
-
 
 //setup cors
-setupCors();
+setupCors(app);
 
 //JSON body parser middlerware
 app.use(express.json());
