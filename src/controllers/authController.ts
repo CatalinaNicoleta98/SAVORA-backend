@@ -38,14 +38,22 @@ export async function registerUser(req:Request, res:Response){
              }
 
 
-            //check if the email is already registered
+            // Normalize input
+            const username = String(req.body.username).trim();
+            const email = String(req.body.email).trim().toLowerCase();
 
+            // Check if username is already registered
+            const usernameExist = await userModel.findOne({ username });
+            if (usernameExist) {
+                res.status(400).json({ error: "Username is already taken" });
+                return;
+            }
 
-            const emailExist = await userModel.findOne({ email: req.body.email });
-
-            if(emailExist){
-                 res.status(400).json({error: "Email is already registered"});
-                 return;
+            // Check if the email is already registered
+            const emailExist = await userModel.findOne({ email });
+            if (emailExist) {
+                res.status(400).json({ error: "Email is already registered" });
+                return;
             }
 
 
@@ -55,8 +63,8 @@ export async function registerUser(req:Request, res:Response){
 
             //create a user object and save in the db
             const userObject = new userModel({
-                username: req.body.username,
-                email: req.body.email,
+                username,
+                email,
                 password: passwordHashed,
             });
 
