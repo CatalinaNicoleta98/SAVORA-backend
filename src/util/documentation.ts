@@ -1,106 +1,112 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
-import {Application} from 'express';
+import { Application } from 'express';
 import path from 'path';
 
 //Swagger definition
 export function setupDocs(app: Application){
 
-//swagger definition
+    const publicApiBaseUrl = (process.env.PUBLIC_API_BASE_URL || 'http://localhost:4000/api').replace(/\/+$/, '');
 
-const swaggerDefinition = {
+    //swagger definition
 
-    openapi: '3.0.0',
+    const swaggerDefinition = {
 
-    info: {
-        title: 'SAVORA',
-        version: '1.0.0',
-        description: 'SAVORA, API documentation for the recipe sharing application. Compulsory individual project',
-    },
-    servers: [
-        {
-            url: 'http://localhost:4000/api/',
-            description: 'Local development server',
+        openapi: '3.0.0',
+
+        info: {
+            title: 'SAVORA',
+            version: '1.0.0',
+            description: 'SAVORA, API documentation for the recipe sharing application. Compulsory individual project',
         },
-    ],
-    components: {
-        securitySchemes:{
-            ApiKeyAuth:{
-                type: 'apiKey',
-                in: 'header',
-                name: 'auth-token'
+        servers: [
+            {
+                url: publicApiBaseUrl,
+                description: 'API base URL',
             },
-        },
-        schemas: {
-            Recipe: {
-                type: 'object',
-                properties: {
-                    _id: { type: 'string' },
-
-                    // Required
-                    title: { type: 'string' },
-                    ingredients: {
-                        type: 'array',
-                        items: { type: 'string' },
-                    },
-                    fullRecipe: { type: 'string' },
-
-                    // Optional filtering
-                    tags: {
-                        type: 'array',
-                        items: { type: 'string' },
-                    },
-                    diet: {
-                        type: 'array',
-                        items: { type: 'string' },
-                    },
-                    allergens: {
-                        type: 'array',
-                        items: { type: 'string' },
-                    },
-
-                    cookingTime: { type: 'number' },
-                    servings: { type: 'number' },
-
-                    // Image
-                    image: { type: 'string' },
-
-                    // Ownership
-                    createdBy: { type: 'string' },
-
-                    createdAt: { type: 'string', format: 'date-time' },
-                    updatedAt: { type: 'string', format: 'date-time' },
+        ],
+        components: {
+            securitySchemes:{
+                ApiKeyAuth:{
+                    type: 'apiKey',
+                    in: 'header',
+                    name: 'auth-token'
                 },
-                required: ['title', 'ingredients', 'fullRecipe', 'createdBy'],
             },
+            schemas: {
+                Recipe: {
+                    type: 'object',
+                    properties: {
+                        _id: { type: 'string' },
 
-            User: {
-                type: 'object',
-                properties: {
-                    _id: { type: 'string' },
-                    username: { type: 'string' },
-                    email: { type: 'string' },
-                    password: { type: 'string' },
-                    createdAt: { type: 'string', format: 'date-time' },
-                    updatedAt: { type: 'string', format: 'date-time' },
+                        // Required
+                        title: { type: 'string' },
+                        ingredients: {
+                            type: 'array',
+                            items: { type: 'string' },
+                        },
+                        fullRecipe: { type: 'string' },
+
+                        // Optional filtering
+                        tags: {
+                            type: 'array',
+                            items: { type: 'string' },
+                        },
+                        diet: {
+                            type: 'array',
+                            items: { type: 'string' },
+                        },
+                        allergens: {
+                            type: 'array',
+                            items: { type: 'string' },
+                        },
+
+                        cookingTime: { type: 'number' },
+                        servings: { type: 'number' },
+
+                        // Image
+                        image: { type: 'string' },
+
+                        // Ownership
+                        createdBy: { type: 'string' },
+
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' },
+                    },
+                    required: ['title', 'ingredients', 'fullRecipe', 'createdBy'],
                 },
-                required: ['username', 'email', 'password'],
+
+                User: {
+                    type: 'object',
+                    properties: {
+                        _id: { type: 'string' },
+                        username: { type: 'string' },
+                        email: { type: 'string' },
+                        password: { type: 'string' },
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' },
+                    },
+                    required: ['username', 'email', 'password'],
+                },
             },
-        },
-    }
-    
-}
+        }
+        
+    };
 
-//swagger options
+    //swagger options
 
-const options = {
-    swaggerDefinition,
-    // Path to the files containing OpenAPI definitions
-    apis: [path.join(__dirname, 'swaggerRoutes.ts')],
-}
+    const options = {
+        definition: swaggerDefinition,
+        apis: [
+            // Local dev (TypeScript)
+            path.join(process.cwd(), 'src/**/*.ts'),
+            // Production build on Render (JavaScript)
+            path.join(process.cwd(), 'dist/**/*.js'),
+        ],
+    };
 
-//swagger specifications
-const swaggerSpec = swaggerJSDoc(options);
-//create docs route
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    //swagger specifications
+    const swaggerSpec = swaggerJSDoc(options);
+    //create docs route
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
