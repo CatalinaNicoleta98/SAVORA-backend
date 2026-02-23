@@ -1,7 +1,6 @@
 import {
     type Request,
     type Response,
-    type NextFunction,
 } from 'express';
 
 import jwt from 'jsonwebtoken';
@@ -19,11 +18,11 @@ declare global {
 }
 
 import bcrypt from 'bcrypt';
-import Joi, {ValidationResult} from 'joi';
 
 //project imports
 import { userModel} from "../models/userModel";
 import {User} from "../interfaces/user";
+import { validateUserLogin, validateUserRegistration } from '../validators/authValidators';
 
 //Register a new user
 
@@ -253,61 +252,4 @@ export async function deleteMe(req: Request, res: Response) {
     } catch (error) {
         res.status(500).send('Error deleting user. Error: ' + error);
     }
-}
-
-//middleware to verify the token and protect routes
-export function verifyToken(req: Request, res: Response, next: NextFunction) {
-    const token = req.header('auth-token');
-
-    if (!token) {
-        res.status(401).json({ error: 'Access denied, no token provided' });
-        return;
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.TOKEN_SECRET as string) as {
-            id: string;
-            email?: string;
-            username?: string;
-            iat?: number;
-            exp?: number;
-        };
-
-        req.userId = decoded.id;
-        req.userEmail = decoded.email;
-        req.userUsername = decoded.username;
-
-        next();
-    } catch (error) {
-        res.status(401).json({ error: 'Invalid token' });
-    }
-}
-
-
-
-
-//validate user registration data(name, email and password)
-export function validateUserRegistration(data: User): ValidationResult {
-
-    const schema = Joi.object({
-        username: Joi.string().min(6).max(255).required(),
-        email: Joi.string().email().min(6).max(255).required(),
-        password: Joi.string().min(6).max(20).required()
-    });
-
-    return schema.validate(data);
-
-}
-
-
-//validate user login data(name, email and password)
-export function validateUserLogin(data: User): ValidationResult {
-
-    const schema = Joi.object({
-        username: Joi.string().min(6).max(255).required(),
-        password: Joi.string().min(6).max(20).required()
-    });
-
-    return schema.validate(data);
-
 }

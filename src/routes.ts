@@ -7,7 +7,8 @@ import {
     deleteRecipeById,
     updateRecipeById,
 } from './controllers/recipeController';
-import { registerUser, loginUser, verifyToken, getMe, updateMe, deleteMe } from './controllers/authController';
+import { registerUser, loginUser, getMe, updateMe, deleteMe } from './controllers/authController';
+import { verifyToken } from './middleware/auth';
 
 const router: Router = Router();
 
