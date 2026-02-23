@@ -1,6 +1,7 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import {Application} from 'express';
+import path from 'path';
 
 //Swagger definition
 export function setupDocs(app: Application){
@@ -94,8 +95,8 @@ const swaggerDefinition = {
 
 const options = {
     swaggerDefinition,
-    //Path to the files containing OpenAPI definitions
-    apis:['**/*.ts'],
+    // Path to the files containing OpenAPI definitions
+    apis: [path.join(__dirname, 'swaggerRoutes.ts')],
 }
 
 //swagger specifications
