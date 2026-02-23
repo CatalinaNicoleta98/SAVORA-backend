@@ -33,8 +33,9 @@ export async function startServer(){
     // connect to DB once at startup, keep it open
     await connect();
 
-    const PORT: number = parseInt(process.env.PORT as string) || 4000;
-    app.listen(PORT, function(){
-        console.log("Server is up and running on port:" + PORT);
+    const port = Number(process.env.PORT) || 4000;
+
+    app.listen(port, function () {
+        console.log(`Server is up and running on port: ${port}`);
     });
 }
